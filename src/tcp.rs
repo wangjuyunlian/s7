@@ -42,8 +42,6 @@ pub struct Options {
     rack: u16,
     slot: u16,
     //Transport Service Access Point
-    local_tsap: u16,
-    remote_tsap: u16,
     local_tsap_high: u8,
     local_tsap_low: u8,
     remote_tsap_high: u8,
@@ -55,6 +53,7 @@ pub struct Options {
 
 impl Options {
     pub fn new(address: IpAddr, rack: u16, slot: u16, conn_type: Connection) -> Options {
+        let mut remote_tsap = ((connection_type() as u16) << 8) as u16 + (rack * 0x20) + slot;
         Options {
             read_timeout: Duration::new(0, 0),
             write_timeout: Duration::new(0, 0),
@@ -62,12 +61,10 @@ impl Options {
             conn_type,
             rack,
             slot,
-            local_tsap: 0,
-            remote_tsap: 0,
-            local_tsap_high: 0,
-            local_tsap_low: 0,
-            remote_tsap_high: 0,
-            remote_tsap_low: 0,
+            local_tsap_high: 0x01,
+            local_tsap_low: 0x00,
+            remote_tsap_high: (remote_tsap >> 8) as u8,
+            remote_tsap_low: remote_tsap as u8,
             last_pdu_type: 0,
             pdu_length: 0,
         }
@@ -84,22 +81,6 @@ impl Transport {
             options,
             stream: Mutex::new(tcp_client),
         })
-    }
-
-    fn set_tsap(&mut self) {
-        let mut remote_tsap = ((self.connection_type() as u16) << 8) as u16
-            + (self.options.rack * 0x20)
-            + self.options.slot;
-        let local_tsap: u16 = 0x0100 & 0x0000FFFF;
-        remote_tsap = remote_tsap & 0x0000FFFF;
-
-        self.options.local_tsap = local_tsap;
-        self.options.local_tsap_high = (local_tsap >> 8) as u8;
-        self.options.local_tsap_low = (local_tsap & 0x00FF) as u8;
-
-        self.options.remote_tsap = remote_tsap;
-        self.options.remote_tsap_high = (remote_tsap >> 8) as u8;
-        self.options.remote_tsap_low = (remote_tsap as u8) & 0x00FF;
     }
 
     fn iso_connect(&mut self) -> Result<(), Error> {

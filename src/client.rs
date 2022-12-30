@@ -58,13 +58,13 @@ impl<T: Transport> Client<T> {
     /// let db = 888;
     /// let offset = 8.4;
     ///
-    /// cl.ag_read(db, offset as i32, Bool::size(), buffer).unwrap();
+    /// cl.db_read(db, offset as i32, Bool::size(), buffer).unwrap();
     ///
     /// let mut  lights = Bool::new(db, offset, buffer.to_vec()).unwrap();
     /// lights.set_value(!lights.value()); // toggle the light switch
     ///
     /// // save
-    /// cl.ag_write(
+    /// cl.db_write(
     ///     lights.data_block(),
     ///     lights.offset(),
     ///     Bool::size(),
@@ -72,7 +72,7 @@ impl<T: Transport> Client<T> {
     /// ).unwrap();
     ///
     /// ```
-    pub fn ag_read(
+    pub fn db_read(
         &mut self,
         db_number: i32,
         start: i32,
@@ -110,13 +110,13 @@ impl<T: Transport> Client<T> {
     /// let db = 888;
     /// let offset = 8.4;
     ///
-    /// cl.ag_read(db, offset as i32, Bool::size(), buffer).unwrap();
+    /// cl.db_read(db, offset as i32, Bool::size(), buffer).unwrap();
     ///
     /// let mut  lights = Bool::new(db, offset, buffer.to_vec()).unwrap();
     /// lights.set_value(!lights.value()); // toggle the light switch
     ///
     /// // save
-    /// cl.ag_write(
+    /// cl.db_write(
     ///     lights.data_block(),
     ///     lights.offset(),
     ///     Bool::size(),
@@ -124,7 +124,7 @@ impl<T: Transport> Client<T> {
     /// ).unwrap();
     ///
     /// ```
-    pub fn ag_write(
+    pub fn db_write(
         &mut self,
         db_number: i32,
         start: i32,
@@ -210,17 +210,10 @@ impl<T: Transport> Client<T> {
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
-    /// cl.eb_read(1, 3, buffer).unwrap();
+    /// cl.di_read(1, 3, buffer).unwrap();
     /// ```
-    pub fn eb_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
-        return self.read(
-            Area::ProcessInput,
-            0,
-            start,
-            size,
-            constant::WL_BYTE,
-            buffer,
-        );
+    pub fn di_read(&mut self, start: i32, size: i32) -> Result<Vec<u8>, Error> {
+        return self.read(Area::ProcessInput, 0, start, size);
     }
 
     /// # Examples
@@ -242,9 +235,9 @@ impl<T: Transport> Client<T> {
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
-    /// cl.eb_write(1, 3, buffer).unwrap();
+    /// cl.di_write(1, 3, buffer).unwrap();
     /// ```
-    pub fn eb_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
+    pub fn di_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.write(
             Area::ProcessInput,
             0,
@@ -274,9 +267,9 @@ impl<T: Transport> Client<T> {
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
-    /// cl.ab_read(1, 3, buffer).unwrap();
+    /// cl.do_read(1, 3, buffer).unwrap();
     /// ```
-    pub fn ab_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
+    pub fn do_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.read(
             Area::ProcessOutput,
             0,
@@ -306,9 +299,9 @@ impl<T: Transport> Client<T> {
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
-    /// cl.ab_write(1, 3, buffer).unwrap();
+    /// cl.do_write(1, 3, buffer).unwrap();
     /// ```
-    pub fn ab_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
+    pub fn do_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.write(
             Area::ProcessOutput,
             0,
@@ -326,34 +319,34 @@ impl<T: Transport> Client<T> {
         db_number: i32,
         mut start: i32,
         mut amount: i32,
-        mut word_len: i32,
-        buffer: &mut Vec<u8>,
+        // mut word_len: i32,
+        // buffer: &mut Vec<u8>,
     ) -> Result<(), Error> {
         // Some adjustment
-        match area {
-            Area::Counter => word_len = constant::WL_COUNTER,
-            Area::Timer => word_len = constant::WL_TIMER,
-            _ => {}
-        };
+        // match area {
+        //     Area::Counter => word_len = constant::WL_COUNTER,
+        //     Area::Timer => word_len = constant::WL_TIMER,
+        //     _ => {}
+        // };
 
         // Calc Word size
-        let mut word_size = constant::data_size_byte(word_len);
+        // let mut word_size = constant::data_size_byte(word_len);
+        //
+        // if word_size == 0 {
+        //     return Err(Error::Response {
+        //         code: error::ISO_INVALID_DATA_SIZE,
+        //     });
+        // }
 
-        if word_size == 0 {
-            return Err(Error::Response {
-                code: error::ISO_INVALID_DATA_SIZE,
-            });
-        }
-
-        if word_len == constant::WL_BIT {
-            amount = 1; // Only 1 bit can be transferred at time
-        } else {
-            if word_len != constant::WL_COUNTER && word_len != constant::WL_TIMER {
-                amount = amount * word_size;
-                word_size = 1;
-                word_len = constant::WL_BYTE;
-            }
-        }
+        // if word_len == constant::WL_BIT {
+        //     amount = 1; // Only 1 bit can be transferred at time
+        // } else {
+        //     if word_len != constant::WL_COUNTER && word_len != constant::WL_TIMER {
+        //         amount = amount * word_size;
+        //         word_size = 1;
+        //         word_len = constant::WL_BYTE;
+        //     }
+        // }
 
         let pdu_length = self.transport.pdu_length();
 
@@ -361,7 +354,8 @@ impl<T: Transport> Client<T> {
             return Err(Error::PduLength(pdu_length));
         }
 
-        let max_elements = (pdu_length - 18) / word_size; // 18 = Reply telegram header //lth note here
+        // let max_elements = (pdu_length - 18) / amount; // 18 = Reply telegram header //lth note here
+        let max_elements = amount / (pdu_length - 18) + amount % (pdu_length - 18);
 
         let mut tot_elements = amount;
         let db_bytes = (db_number as u16).to_be_bytes();
