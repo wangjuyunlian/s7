@@ -1,24 +1,56 @@
+use std::ops::Deref;
+use serde::{Deserialize, Serialize};
 use crate::error::Error;
 
 // Area ID
-#[derive(Clone, Copy)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 #[allow(dead_code)]
-pub(crate) enum Area {
-    ProcessInput = 0x81,
-    ProcessOutput = 0x82,
+pub enum Area {
+    ProcessInput(DataSizeType),
+    ProcessOutput(DataSizeType),
     /// Merkers are address registers within the CPU.
     /// The number of available flag bytes depends on the respective CPU and can be taken from the technical data.
     /// You can use flag bits, flag bytes, flag words or flag double words in a PLC program.
-    Merker = 0x83,
+    // Merker,
     /// German thing, means building blocks
-    /// This is your storage  
-    DataBausteine = 0x84,
-    Counter = 0x1C,
-    Timer = 0x1D,
-    Unknown,
+    /// This is your storage  : db number, DataSizeType
+    DataBausteine(u16, DataSizeType),
+    // Counter,
+    // Timer,
 }
-#[derive(Debug, Copy, Clone)]
+impl Area {
+    pub fn area_data(&self) -> u8 {
+        match &self {
+            Area::ProcessInput(_) => {0x81}
+            Area::ProcessOutput(_) => {0x82}
+            // Area::Merker => {0x83}
+            Area::DataBausteine(_, _) => {0x84}
+            // Area::Counter => {0x1C}
+            // Area::Timer => {0x1D}
+        }
+    }
+    pub fn db_number(&self) -> u16 {
+        match self {
+            Area::ProcessInput(_) => {0}
+            Area::ProcessOutput(_) => {0}
+            Area::DataBausteine(db_number, _) => {*db_number}
+        }
+    }
+}
+impl Deref for Area {
+    type Target = DataSizeType;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Area::ProcessInput(val) => {val}
+            Area::ProcessOutput(val) => {val}
+            Area::DataBausteine(_, val) => {val}
+        }
+    }
+}
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 #[repr(u8)]
+#[serde()]
 pub enum BitAddr {
     Addr0 = 0,
     Addr1 = 1,
@@ -30,8 +62,8 @@ pub enum BitAddr {
     Addr7 = 7,
 }
 
-#[derive(Debug, Copy, Clone)]
-pub enum DataSizeByte {
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum DataSizeType {
     Bit { addr: u16, bit_addr: BitAddr },
     Byte { addr: u16, len: u16 },
     Char { addr: u16, len: u16 },
@@ -43,10 +75,10 @@ pub enum DataSizeByte {
     Counter { addr: u16, len: u16 },
     Timer { addr: u16, len: u16 },
 }
-impl DataSizeByte {
+impl DataSizeType {
     /// 类型对应的字节长度
     pub fn length(&self) -> u16 {
-        use DataSizeByte::*;
+        use DataSizeType::*;
         match self {
             Bit { .. } | Byte { .. } | Char { .. } => 1,
             Word { .. } | Int { .. } | Counter { .. } | Timer { .. } => 2,
@@ -55,7 +87,7 @@ impl DataSizeByte {
     }
     /// 位的偏移位置
     pub fn bit_addr(&self) -> u8 {
-        use DataSizeByte::*;
+        use DataSizeType::*;
         match self {
             Bit { bit_addr, .. } => *bit_addr as u8,
             _ => 0x00,
@@ -63,7 +95,7 @@ impl DataSizeByte {
     }
     /// 读取的单位长度
     pub fn len(&self) -> u16 {
-        use DataSizeByte::*;
+        use DataSizeType::*;
         match self {
             Bit {  .. } => 1u16,
             Byte { len, .. } => *len,
@@ -82,7 +114,7 @@ impl DataSizeByte {
         (self.len()  * self.length() ) as usize
     }
     pub fn addr(&self) -> [u8; 3] {
-        use DataSizeByte::*;
+        use DataSizeType::*;
         let byte_addr = match self {
             Bit { addr, .. } => *addr,
             Byte { addr, .. } => *addr,
@@ -103,7 +135,7 @@ impl DataSizeByte {
         ]
     }
     pub fn data(&self) -> u8 {
-        use DataSizeByte::*;
+        use DataSizeType::*;
         match self {
             Bit { .. } => 0x01,
             Byte { .. } => 0x02,

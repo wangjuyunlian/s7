@@ -1,44 +1,50 @@
 use log::debug;
 use pretty_hex::simple_hex;
-use s7::field::Bool;
-use s7::{client, tcp, transport, BitAddr, DataSizeByte};
+use s7::{client, tcp, transport, Area, BitAddr, Config, DataSizeType};
 use std::net::{IpAddr, Ipv4Addr};
 use std::time::Duration;
 
 fn main() {
     custom_utils::logger::logger_stdout_debug();
-    let addr = Ipv4Addr::new(192, 168, 1, 222);
-    let mut opts = tcp::Options::new(IpAddr::from(addr), 102, 0, 1, transport::Connection::OP);
-
-    opts.read_timeout = Duration::from_secs(2);
-    opts.write_timeout = Duration::from_secs(2);
-
+    let config = Config {
+        address: Ipv4Addr::new(192, 168, 1, 222).into(),
+        port: 102,
+        rack: 0,
+        slot: 1,
+        timeout: Duration::from_secs(2),
+        areas: Default::default(),
+    };
+    let mut opts = tcp::Options::init_from_config(&config);
     let t = tcp::TcpTransport::connect(opts).unwrap();
-
     let mut cl = client::Client::new(t).unwrap();
-
     // {
     //     // 读DQ0数据
     debug!(
         "{}",
         simple_hex(
-            &cl.dq_read(DataSizeByte::Bit {
+            &cl.read(Area::ProcessOutput(DataSizeType::Bit {
                 addr: 0,
                 bit_addr: BitAddr::Addr2
-            })
+            }))
             .unwrap()
         )
     );
     debug!(
         "{}",
-        simple_hex(&cl.dq_read(DataSizeByte::Byte { addr: 0, len: 1 }).unwrap())
+        simple_hex(
+            &cl.read(Area::ProcessOutput(DataSizeType::Byte { addr: 0, len: 1 }))
+                .unwrap()
+        )
     );
     // }
     // {
     //     // 读DI数据
     debug!(
         "{}",
-        simple_hex(&cl.di_read(DataSizeByte::Byte { addr: 0, len: 1 }).unwrap())
+        simple_hex(
+            &cl.read(Area::ProcessInput(DataSizeType::Byte { addr: 0, len: 1 }))
+                .unwrap()
+        )
     );
     // }
     {
@@ -46,8 +52,11 @@ fn main() {
         debug!(
             "{}",
             simple_hex(
-                &cl.db_read(1, DataSizeByte::Word { addr: 300, len: 1 })
-                    .unwrap()
+                &cl.read(Area::DataBausteine(
+                    1,
+                    DataSizeType::Word { addr: 300, len: 1 }
+                ))
+                .unwrap()
             )
         );
     }

@@ -5,7 +5,7 @@
 use super::constant::{self, Area};
 use super::error::{self, Error};
 use super::transport::{self, Transport};
-use crate::constant::{CpuStatus, DataSizeByte};
+use crate::constant::{CpuStatus};
 use byteorder::{BigEndian, ByteOrder};
 use std::str;
 
@@ -72,9 +72,9 @@ impl<T: Transport> Client<T> {
     /// ).unwrap();
     ///
     /// ```
-    pub fn db_read(&mut self, db_number: u16, data_type: DataSizeByte) -> Result<Vec<u8>, Error> {
-        return self.read(Area::DataBausteine, db_number, data_type);
-    }
+    // pub fn db_read(&mut self, db_number: u16, data_type: DataSizeType) -> Result<Vec<u8>, Error> {
+    //     return self.read(Area::DataBausteine, db_number, data_type);
+    // }
 
     /// # Examples
     ///
@@ -178,9 +178,9 @@ impl<T: Transport> Client<T> {
     //     return self.write(Area::Merker, 0, start, size, constant::WL_BYTE, buffer);
     // }
 
-    pub fn di_read(&mut self, data_type: DataSizeByte) -> Result<Vec<u8>, Error> {
-        return self.read(Area::ProcessInput, 0, data_type);
-    }
+    // pub fn di_read(&mut self, data_type: DataSizeType) -> Result<Vec<u8>, Error> {
+    //     return self.read(Area::ProcessInput, 0, data_type);
+    // }
 
     /// # Examples
     ///
@@ -217,9 +217,9 @@ impl<T: Transport> Client<T> {
     /// read ProcessOutput
     /// start: addr
     /// size: length
-    pub fn dq_read(&mut self, data_type: DataSizeByte) -> Result<Vec<u8>, Error> {
-        return self.read(Area::ProcessOutput, 0, data_type);
-    }
+    // pub fn dq_read(&mut self, data_type: DataSizeType) -> Result<Vec<u8>, Error> {
+    //     return self.read(Area::ProcessOutput, 0, data_type);
+    // }
 
     /// # Examples
     ///
@@ -257,12 +257,9 @@ impl<T: Transport> Client<T> {
     ///
     /// Transport Size固定为Byte
     /// 3位的Bit addr固定为0
-    fn read(
+    pub fn read(
         &mut self,
         area: Area,
-        db_number: u16,
-        data_type: DataSizeByte,
-        // buffer: &mut Vec<u8>,
     ) -> Result<Vec<u8>, Error> {
         let pdu_length = self.transport.pdu_length();
 
@@ -270,15 +267,15 @@ impl<T: Transport> Client<T> {
             return Err(Error::PduLength(pdu_length));
         }
 
-        let amount = data_type.len();
+        let amount = area.len();
         // let max_elements = (pdu_length - 18) / amount; // 18 = Reply telegram header //lth note here
         let max_elements = amount / (pdu_length - 18) + amount % (pdu_length - 18);
 
         let mut tot_elements = amount;
-        let db_bytes = db_number.to_be_bytes();
+        let db_bytes = area.db_number().to_be_bytes();
         let mut offset = 0;
 
-        let mut buffer = Vec::with_capacity(data_type.byte_len());
+        let mut buffer = Vec::with_capacity(area.byte_len());
         while tot_elements > 0 {
             let mut num_elements = tot_elements;
 
@@ -286,7 +283,7 @@ impl<T: Transport> Client<T> {
                 num_elements = max_elements;
             }
 
-            let size_requested = num_elements * data_type.length();
+            let size_requested = num_elements * area.length();
             // Setup the telegram
             let mut request =
                 transport::READ_WRITE_TELEGRAM[..constant::SIZE_HEADER_READ as usize].to_vec();
@@ -299,7 +296,7 @@ impl<T: Transport> Client<T> {
             //     }
             //     _ => start << 3,
             // };
-            request[22] = data_type.data();
+            request[22] = area.data();
             // Num elements
             let num_elements_bytes = num_elements.to_be_bytes();
             request[23] = num_elements_bytes[0];
@@ -309,14 +306,14 @@ impl<T: Transport> Client<T> {
             request[26] = db_bytes[1];
 
             // Set Area
-            request[27] = area as u8;
+            request[27] = area.area_data();
             // match area {
             //     Area::DataBausteine => request[27] = area as u8,
             //     _ => {}
             // }
 
             // Address into the PLC (only 3 bytes)
-            let address = data_type.addr();
+            let address = area.addr();
             request[28] = address[0];
             request[29] = address[1];
             request[30] = address[2];

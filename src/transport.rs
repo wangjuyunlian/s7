@@ -22,6 +22,12 @@ pub enum Connection {
     Basic = 3,
 }
 
+impl Default for Connection {
+    fn default() -> Self {
+        Self::OP
+    }
+}
+
 /// an abstract communication used by the client to send requests
 /// ## How can I implement `Transport`?
 ///

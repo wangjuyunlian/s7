@@ -9,6 +9,7 @@ extern crate byteorder;
 use super::error::{self, Error};
 use super::transport::{self, Transport};
 use crate::transport::Connection;
+use crate::Config;
 use byteorder::{BigEndian, ByteOrder};
 use std::io::{Read, Write};
 use std::net::IpAddr;
@@ -51,14 +52,31 @@ pub struct Options {
 }
 
 impl Options {
-    pub fn new(address: IpAddr, port: u16, rack: u16, slot: u16, conn_type: Connection) -> Options {
-        let remote_tsap = ((conn_type as u16) << 8) + (rack * 0x20) + slot;
+    // pub fn new(address: IpAddr, port: u16, rack: u16, slot: u16, conn_type: Connection) -> Options {
+    //     let remote_tsap = ((conn_type as u16) << 8) + (rack * 0x20) + slot;
+    //     Options {
+    //         read_timeout: Duration::new(0, 0),
+    //         write_timeout: Duration::new(0, 0),
+    //         port,
+    //         address, //ip:102,
+    //         conn_type,
+    //         local_tsap_high: 0x01,
+    //         local_tsap_low: 0x00,
+    //         remote_tsap_high: (remote_tsap >> 8) as u8,
+    //         remote_tsap_low: remote_tsap as u8,
+    //         last_pdu_type: 0,
+    //         pdu_length: 256,
+    //     }
+    // }
+    pub fn init_from_config(config: &Config) -> Options {
+        let remote_tsap =
+            ((Connection::default() as u16) << 8) + (config.rack * 0x20) + config.slot;
         Options {
-            read_timeout: Duration::new(0, 0),
-            write_timeout: Duration::new(0, 0),
-            port,
-            address, //ip:102,
-            conn_type,
+            read_timeout: config.timeout,
+            write_timeout: config.timeout,
+            port: config.port,
+            address: config.address, //ip:102,
+            conn_type: Connection::default(),
             local_tsap_high: 0x01,
             local_tsap_low: 0x00,
             remote_tsap_high: (remote_tsap >> 8) as u8,
