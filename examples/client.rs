@@ -8,7 +8,7 @@ use std::time::Duration;
 fn main() {
     custom_utils::logger::logger_stdout_debug();
     let addr = Ipv4Addr::new(192, 168, 1, 222);
-    let mut opts = tcp::Options::new(IpAddr::from(addr), 0, 1, transport::Connection::OP);
+    let mut opts = tcp::Options::new(IpAddr::from(addr), 102, 0, 1, transport::Connection::OP);
 
     opts.read_timeout = Duration::from_secs(2);
     opts.write_timeout = Duration::from_secs(2);
