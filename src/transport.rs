@@ -4,9 +4,7 @@
 
 //! Transport definition for PLC
 
-use super::constant;
 use super::error::Error;
-use crate::constant::DataSizeByte;
 
 /// Client Connection Type
 /// 16 possible connections limited by the hardware

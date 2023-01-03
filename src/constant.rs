@@ -65,7 +65,7 @@ impl DataSizeByte {
     pub fn len(&self) -> u16 {
         use DataSizeByte::*;
         match self {
-            Bit { bit_addr, .. } => 1u16,
+            Bit {  .. } => 1u16,
             Byte { len, .. } => *len,
             Char { len, .. } => *len,
             Word { len, .. } => *len,
@@ -95,7 +95,7 @@ impl DataSizeByte {
             Counter { addr, .. } => *addr,
             Timer { addr, .. } => *addr,
         };
-        let mut address = (byte_addr as u32) << 3 + self.bit_addr();
+        let address = (byte_addr as u32) << 3 + self.bit_addr();
         [
             (address & 0xFF0000 >> 16) as u8,
             (address & 0xFF00 >> 8) as u8,

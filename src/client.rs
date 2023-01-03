@@ -316,7 +316,7 @@ impl<T: Transport> Client<T> {
             // }
 
             // Address into the PLC (only 3 bytes)
-            let mut address = data_type.addr();
+            let address = data_type.addr();
             request[28] = address[0];
             request[29] = address[1];
             request[30] = address[2];
@@ -339,7 +339,7 @@ impl<T: Transport> Client<T> {
                     let (mut i, end): (usize, usize) = (25, 25 + (size_requested as usize));
 
                     //copy response to buffer
-                    for k in offset..size_requested {
+                    for _ in offset..size_requested {
                         if i == end {
                             break;
                         }
@@ -629,7 +629,7 @@ impl<T: Transport> Client<T> {
     }
 
     fn read_szl(&mut self, id: u16, index: u16) -> Result<transport::S7SZL, Error> {
-        let data_szl = 0;
+        // let data_szl = 0;
         let mut offset = 0;
         let seq_out: u16 = 0x0000;
 
