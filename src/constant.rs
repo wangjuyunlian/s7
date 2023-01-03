@@ -44,6 +44,7 @@ pub enum DataSizeByte {
     Timer { addr: u16, len: u16 },
 }
 impl DataSizeByte {
+    /// 类型对应的字节长度
     pub fn length(&self) -> u16 {
         use DataSizeByte::*;
         match self {
@@ -52,6 +53,7 @@ impl DataSizeByte {
             DWord { .. } | DInt { .. } | Real { .. } => 4,
         }
     }
+    /// 位的偏移位置
     pub fn bit_addr(&self) -> u8 {
         use DataSizeByte::*;
         match self {
@@ -59,6 +61,7 @@ impl DataSizeByte {
             _ => 0x00,
         }
     }
+    /// 读取的单位长度
     pub fn len(&self) -> u16 {
         use DataSizeByte::*;
         match self {
@@ -74,9 +77,9 @@ impl DataSizeByte {
             Timer { len, .. } => *len,
         }
     }
-    /// 用于返回后的byte长度
+    /// 用于返回后的byte长度 = 读取长度 * 单位字节数
     pub fn byte_len(&self) -> usize {
-        (self.len() as usize) * self.byte_len()
+        (self.len()  * self.length() ) as usize
     }
     pub fn addr(&self) -> [u8; 3] {
         use DataSizeByte::*;

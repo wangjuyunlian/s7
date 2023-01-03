@@ -23,7 +23,7 @@ pub const IDLE_TIMEOUT: Duration = Duration::from_secs(60);
 pub const MAX_LENGTH: usize = 2084;
 //messages
 const PDU_SIZE_REQUESTED: u16 = 480;
-const ISO_TCP: u16 = 102; //default isotcp port
+// const ISO_TCP: u16 = 102; //default isotcp port
 const ISO_HEADER_SIZE: u16 = 7; // TPKT+COTP Header Size
 const MIN_PDU_SIZE: u16 = 16;
 
@@ -37,10 +37,9 @@ pub struct TcpTransport {
 pub struct Options {
     pub read_timeout: Duration,
     pub write_timeout: Duration,
-    address: String,
+    address: IpAddr,
+    port: u16,
     pub conn_type: transport::Connection,
-    rack: u16,
-    slot: u16,
     //Transport Service Access Point
     local_tsap_high: u8,
     local_tsap_low: u8,
@@ -52,28 +51,27 @@ pub struct Options {
 }
 
 impl Options {
-    pub fn new(address: IpAddr, rack: u16, slot: u16, conn_type: Connection) -> Options {
-        let mut remote_tsap = ((conn_type as u16) << 8) + (rack * 0x20) + slot;
+    pub fn new(address: IpAddr, port: u16, rack: u16, slot: u16, conn_type: Connection) -> Options {
+        let remote_tsap = ((conn_type as u16) << 8) + (rack * 0x20) + slot;
         Options {
             read_timeout: Duration::new(0, 0),
             write_timeout: Duration::new(0, 0),
-            address: format!("{}:{}", address.to_string(), ISO_TCP.to_string()), //ip:102,
+            port,
+            address, //ip:102,
             conn_type,
-            rack,
-            slot,
             local_tsap_high: 0x01,
             local_tsap_low: 0x00,
             remote_tsap_high: (remote_tsap >> 8) as u8,
             remote_tsap_low: remote_tsap as u8,
             last_pdu_type: 0,
-            pdu_length: 0,
+            pdu_length: 256,
         }
     }
 }
 
 impl TcpTransport {
     pub fn connect(options: Options) -> Result<TcpTransport, Error> {
-        let tcp_client = TcpStream::connect(&options.address)?;
+        let tcp_client = TcpStream::connect((options.address, options.port))?;
 
         tcp_client.set_read_timeout(Some(options.read_timeout))?;
         tcp_client.set_write_timeout(Some(options.write_timeout))?;
