@@ -5,7 +5,7 @@
 use super::constant::{self, Area};
 use super::error::{self, Error};
 use super::transport::{self, Transport};
-use crate::constant::CpuStatus;
+use crate::constant::{CpuStatus, DataSizeByte};
 use byteorder::{BigEndian, ByteOrder};
 use std::str;
 
@@ -51,7 +51,7 @@ impl<T: Transport> Client<T> {
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
     ///
-    /// let t = tcp::Transport::connect(opts).unwrap();
+    /// let t = tcp::TcpTransport::connect(opts).unwrap();
     /// let mut cl = client::Client::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; Bool::size() as usize];
@@ -72,21 +72,8 @@ impl<T: Transport> Client<T> {
     /// ).unwrap();
     ///
     /// ```
-    pub fn db_read(
-        &mut self,
-        db_number: i32,
-        start: i32,
-        size: i32,
-        buffer: &mut Vec<u8>,
-    ) -> Result<(), Error> {
-        return self.read(
-            Area::DataBausteine,
-            db_number,
-            start,
-            size,
-            constant::WL_BYTE,
-            buffer,
-        );
+    pub fn db_read(&mut self, db_number: u16, data_type: DataSizeByte) -> Result<Vec<u8>, Error> {
+        return self.read(Area::DataBausteine, db_number, data_type);
     }
 
     /// # Examples
@@ -103,7 +90,7 @@ impl<T: Transport> Client<T> {
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
     ///
-    /// let t = tcp::Transport::connect(opts).unwrap();
+    /// let t = tcp::TcpTransport::connect(opts).unwrap();
     /// let mut cl = client::Client::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; Bool::size() as usize];
@@ -124,22 +111,22 @@ impl<T: Transport> Client<T> {
     /// ).unwrap();
     ///
     /// ```
-    pub fn db_write(
-        &mut self,
-        db_number: i32,
-        start: i32,
-        size: i32,
-        buffer: &mut Vec<u8>,
-    ) -> Result<(), Error> {
-        return self.write(
-            Area::DataBausteine,
-            db_number,
-            start,
-            size,
-            constant::WL_BYTE,
-            buffer,
-        );
-    }
+    // pub fn db_write(
+    //     &mut self,
+    //     db_number: i32,
+    //     start: i32,
+    //     size: i32,
+    //     buffer: &mut Vec<u8>,
+    // ) -> Result<(), Error> {
+    //     return self.write(
+    //         Area::DataBausteine,
+    //         db_number,
+    //         start,
+    //         size,
+    //         constant::WL_BYTE,
+    //         buffer,
+    //     );
+    // }
 
     /// # Examples
     ///
@@ -155,16 +142,16 @@ impl<T: Transport> Client<T> {
     /// opts.write_timeout = Duration::from_secs(2);
     ///
     ///
-    /// let t = tcp::Transport::connect(opts).unwrap();
+    /// let t = tcp::TcpTransport::connect(opts).unwrap();
     /// let mut cl = client::Client::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
     /// cl.mb_read(1, 3, buffer).unwrap();
     /// ```
-    pub fn mb_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
-        return self.read(Area::Merker, 0, start, size, constant::WL_BYTE, buffer);
-    }
+    // pub fn mb_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
+    //     return self.read(Area::Merker, 0, start, size, constant::WL_BYTE, buffer);
+    // }
 
     /// # Examples
     ///
@@ -180,15 +167,19 @@ impl<T: Transport> Client<T> {
     /// opts.write_timeout = Duration::from_secs(2);
     ///
     ///
-    /// let t = tcp::Transport::connect(opts).unwrap();
+    /// let t = tcp::TcpTransport::connect(opts).unwrap();
     /// let mut cl = client::Client::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
     /// cl.mb_write(1, 3, buffer).unwrap();
     /// ```
-    pub fn mb_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
-        return self.write(Area::Merker, 0, start, size, constant::WL_BYTE, buffer);
+    // pub fn mb_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
+    //     return self.write(Area::Merker, 0, start, size, constant::WL_BYTE, buffer);
+    // }
+
+    pub fn di_read(&mut self, data_type: DataSizeByte) -> Result<Vec<u8>, Error> {
+        return self.read(Area::ProcessInput, 0, data_type);
     }
 
     /// # Examples
@@ -205,47 +196,29 @@ impl<T: Transport> Client<T> {
     /// opts.write_timeout = Duration::from_secs(2);
     ///
     ///
-    /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::Client::new(t).unwrap();
-    ///
-    /// let buffer = &mut vec![0u8; 255];
-    ///
-    /// cl.di_read(1, 3, buffer).unwrap();
-    /// ```
-    pub fn di_read(&mut self, start: i32, size: i32) -> Result<Vec<u8>, Error> {
-        return self.read(Area::ProcessInput, 0, start, size);
-    }
-
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use std::net::{Ipv4Addr, IpAddr};
-    /// use s7::{client, tcp, transport};
-    /// use std::time::Duration;
-    ///
-    /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
-    ///
-    /// opts.read_timeout = Duration::from_secs(2);
-    /// opts.write_timeout = Duration::from_secs(2);
-    ///
-    ///
-    /// let t = tcp::Transport::connect(opts).unwrap();
+    /// let t = tcp::TcpTransport::connect(opts).unwrap();
     /// let mut cl = client::Client::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
     /// cl.di_write(1, 3, buffer).unwrap();
     /// ```
-    pub fn di_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
-        return self.write(
-            Area::ProcessInput,
-            0,
-            start,
-            size,
-            constant::WL_BYTE,
-            buffer,
-        );
+    // pub fn di_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
+    //     return self.write(
+    //         Area::ProcessInput,
+    //         0,
+    //         start,
+    //         size,
+    //         constant::WL_BYTE,
+    //         buffer,
+    //     );
+    // }
+
+    /// read ProcessOutput
+    /// start: addr
+    /// size: length
+    pub fn dq_read(&mut self, data_type: DataSizeByte) -> Result<Vec<u8>, Error> {
+        return self.read(Area::ProcessOutput, 0, data_type);
     }
 
     /// # Examples
@@ -262,105 +235,50 @@ impl<T: Transport> Client<T> {
     /// opts.write_timeout = Duration::from_secs(2);
     ///
     ///
-    /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::Client::new(t).unwrap();
-    ///
-    /// let buffer = &mut vec![0u8; 255];
-    ///
-    /// cl.do_read(1, 3, buffer).unwrap();
-    /// ```
-    pub fn do_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
-        return self.read(
-            Area::ProcessOutput,
-            0,
-            start,
-            size,
-            constant::WL_BYTE,
-            buffer,
-        );
-    }
-
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use std::net::{Ipv4Addr, IpAddr};
-    /// use s7::{client, tcp, transport};
-    /// use std::time::Duration;
-    ///
-    /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
-    ///
-    /// opts.read_timeout = Duration::from_secs(2);
-    /// opts.write_timeout = Duration::from_secs(2);
-    ///
-    ///
-    /// let t = tcp::Transport::connect(opts).unwrap();
+    /// let t = tcp::TcpTransport::connect(opts).unwrap();
     /// let mut cl = client::Client::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
     /// cl.do_write(1, 3, buffer).unwrap();
     /// ```
-    pub fn do_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
-        return self.write(
-            Area::ProcessOutput,
-            0,
-            start,
-            size,
-            constant::WL_BYTE,
-            buffer,
-        );
-    }
+    // pub fn dq_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
+    //     return self.write(
+    //         Area::ProcessOutput,
+    //         0,
+    //         start,
+    //         size,
+    //         constant::WL_BYTE,
+    //         buffer,
+    //     );
+    // }
 
     //read generic area, pass result into a buffer
+    ///
+    /// Transport Size固定为Byte
+    /// 3位的Bit addr固定为0
     fn read(
         &mut self,
         area: Area,
-        db_number: i32,
-        mut start: i32,
-        mut amount: i32,
-        // mut word_len: i32,
+        db_number: u16,
+        data_type: DataSizeByte,
         // buffer: &mut Vec<u8>,
-    ) -> Result<(), Error> {
-        // Some adjustment
-        // match area {
-        //     Area::Counter => word_len = constant::WL_COUNTER,
-        //     Area::Timer => word_len = constant::WL_TIMER,
-        //     _ => {}
-        // };
-
-        // Calc Word size
-        // let mut word_size = constant::data_size_byte(word_len);
-        //
-        // if word_size == 0 {
-        //     return Err(Error::Response {
-        //         code: error::ISO_INVALID_DATA_SIZE,
-        //     });
-        // }
-
-        // if word_len == constant::WL_BIT {
-        //     amount = 1; // Only 1 bit can be transferred at time
-        // } else {
-        //     if word_len != constant::WL_COUNTER && word_len != constant::WL_TIMER {
-        //         amount = amount * word_size;
-        //         word_size = 1;
-        //         word_len = constant::WL_BYTE;
-        //     }
-        // }
-
+    ) -> Result<Vec<u8>, Error> {
         let pdu_length = self.transport.pdu_length();
 
         if pdu_length == 0 {
             return Err(Error::PduLength(pdu_length));
         }
 
+        let amount = data_type.len();
         // let max_elements = (pdu_length - 18) / amount; // 18 = Reply telegram header //lth note here
         let max_elements = amount / (pdu_length - 18) + amount % (pdu_length - 18);
 
         let mut tot_elements = amount;
-        let db_bytes = (db_number as u16).to_be_bytes();
+        let db_bytes = db_number.to_be_bytes();
         let mut offset = 0;
 
+        let mut buffer = Vec::with_capacity(data_type.byte_len());
         while tot_elements > 0 {
             let mut num_elements = tot_elements;
 
@@ -368,11 +286,24 @@ impl<T: Transport> Client<T> {
                 num_elements = max_elements;
             }
 
-            let size_requested = num_elements * word_size;
+            let size_requested = num_elements * data_type.length();
             // Setup the telegram
             let mut request =
                 transport::READ_WRITE_TELEGRAM[..constant::SIZE_HEADER_READ as usize].to_vec();
 
+            // Adjusts Start and word length
+            // let mut address = match word_len {
+            //     constant::WL_BIT | constant::WL_COUNTER | constant::WL_TIMER => {
+            //         request[22] = word_len as u8;
+            //         start
+            //     }
+            //     _ => start << 3,
+            // };
+            request[22] = data_type.data();
+            // Num elements
+            let num_elements_bytes = num_elements.to_be_bytes();
+            request[23] = num_elements_bytes[0];
+            request[24] = num_elements_bytes[1];
             // Set DB Number
             request[25] = db_bytes[0];
             request[26] = db_bytes[1];
@@ -384,26 +315,11 @@ impl<T: Transport> Client<T> {
             //     _ => {}
             // }
 
-            // Adjusts Start and word length
-            let mut address = match word_len {
-                constant::WL_BIT | constant::WL_COUNTER | constant::WL_TIMER => {
-                    request[22] = word_len as u8;
-                    start
-                }
-                _ => start << 3,
-            };
-
-            // Num elements
-            let num_elements_bytes = (num_elements as u16).to_be_bytes();
-            request[23] = num_elements_bytes[0];
-            request[24] = num_elements_bytes[1];
-
             // Address into the PLC (only 3 bytes)
-            request[30] = (address & 0x0FF) as u8;
-            address = address >> 8;
-            request[29] = (address & 0x0FF) as u8;
-            address = address >> 8;
-            request[28] = (address & 0x0FF) as u8;
+            let mut address = data_type.addr();
+            request[28] = address[0];
+            request[29] = address[1];
+            request[30] = address[2];
 
             let result = self.transport.send(request.as_slice());
 
@@ -427,7 +343,7 @@ impl<T: Transport> Client<T> {
                         if i == end {
                             break;
                         }
-                        buffer[k as usize] = response[i];
+                        buffer.push(response[i]);
                         i += 1;
                     }
                     offset += size_requested;
@@ -436,145 +352,143 @@ impl<T: Transport> Client<T> {
                     return Err(e);
                 }
             }
-
             tot_elements -= num_elements;
-            start += num_elements * word_size
         }
-        Ok(())
+        Ok(buffer)
     }
 
-    fn write(
-        &mut self,
-        area: Area,
-        db_number: i32,
-        mut start: i32,
-        mut amount: i32,
-        mut word_len: i32,
-        buffer: &mut Vec<u8>,
-    ) -> Result<(), Error> {
-        // Some adjustment
-        word_len = match area {
-            Area::Counter => constant::WL_COUNTER,
-            Area::Timer => constant::WL_TIMER,
-            _ => word_len,
-        };
-
-        // Calc Word size
-        let mut word_size = constant::data_size_byte(word_len);
-
-        if word_size == 0 {
-            return Err(Error::Response {
-                code: error::ISO_INVALID_DATA_SIZE,
-            });
-        }
-
-        if word_len == constant::WL_BIT {
-            amount = 1; // Only 1 bit can be transferred at time
-        } else {
-            if word_len != constant::WL_COUNTER && word_len != constant::WL_TIMER {
-                amount = amount * word_size;
-                word_size = 1;
-                word_len = constant::WL_BYTE;
-            }
-        }
-
-        let mut offset: i32 = 0;
-        let pdu_length = self.transport.pdu_length();
-        let max_elements = (pdu_length - 35) / word_size; // 35 = Reply telegram header
-        let mut tot_elements = amount;
-
-        while tot_elements > 0 {
-            let mut num_elements = tot_elements;
-            if num_elements > max_elements {
-                num_elements = max_elements;
-            }
-            let data_size = num_elements * word_size;
-            let iso_size = constant::SIZE_HEADER_WRITE + data_size;
-
-            // Setup the telegram
-            let mut request_data = transport::READ_WRITE_TELEGRAM.to_vec();
-            // Whole telegram Size
-            BigEndian::write_u16(request_data[2..].as_mut(), iso_size as u16);
-            // Data length
-            let mut length = data_size + 4;
-            BigEndian::write_u16(request_data[15..].as_mut(), length as u16);
-            // Function
-            request_data[17] = 0x05;
-            // Set DB Number
-            request_data[27] = area as u8;
-
-            match area {
-                Area::DataBausteine => {
-                    BigEndian::write_u16(request_data[25..].as_mut(), db_number as u16)
-                }
-                _ => {}
-            }
-            // Adjusts start and word length
-            let mut address = match word_len {
-                constant::WL_BIT | constant::WL_COUNTER | constant::WL_TIMER => {
-                    length = data_size;
-                    request_data[22] = word_len as u8;
-                    start
-                }
-                _ => {
-                    length = data_size << 3;
-                    start << 3
-                }
-            };
-
-            // Num elements
-            BigEndian::write_u16(request_data[23..].as_mut(), num_elements as u16);
-            // address into the PLC
-            request_data[30] = (address & 0x0FF) as u8;
-            address = address >> 8;
-            request_data[29] = (address & 0x0FF) as u8;
-            address = address >> 8;
-            request_data[28] = (address & 0x0FF) as u8;
-
-            // Transport Size
-            match word_len {
-                constant::WL_BIT => request_data[32] = constant::TS_RES_BIT as u8,
-                constant::WL_COUNTER | constant::WL_TIMER => {
-                    request_data[32] = constant::TS_RES_OCTET as u8
-                }
-                _ => request_data[32] = constant::TS_RES_BYTE as u8, // byte/word/dword etc.
-            }
-            // length
-            BigEndian::write_u16(request_data[33..].as_mut(), length as u16);
-
-            //expand values into array
-            request_data.splice(
-                35..35,
-                buffer[offset as usize..offset as usize + data_size as usize].to_vec(),
-            );
-
-            let result = self.transport.send(request_data.as_mut_slice());
-
-            match result {
-                Ok(response) => {
-                    if response.len() != 22 {
-                        return Err(Error::Response {
-                            code: error::ISO_INVALID_PDU,
-                        });
-                    }
-
-                    if response[21] != 0xFF {
-                        return Err(Error::CPU {
-                            code: response[21] as i32,
-                        });
-                    }
-                }
-                Err(e) => {
-                    return Err(e);
-                }
-            }
-
-            offset += data_size;
-            tot_elements -= num_elements;
-            start += num_elements * word_size;
-        }
-        Ok(())
-    }
+    // fn write(
+    //     &mut self,
+    //     area: Area,
+    //     db_number: i32,
+    //     mut start: i32,
+    //     mut amount: i32,
+    //     mut word_len: i32,
+    //     buffer: &mut Vec<u8>,
+    // ) -> Result<(), Error> {
+    //     // Some adjustment
+    //     word_len = match area {
+    //         Area::Counter => constant::WL_COUNTER,
+    //         Area::Timer => constant::WL_TIMER,
+    //         _ => word_len,
+    //     };
+    //
+    //     // Calc Word size
+    //     let mut word_size = constant::data_size_byte(word_len);
+    //
+    //     if word_size == 0 {
+    //         return Err(Error::Response {
+    //             code: error::ISO_INVALID_DATA_SIZE,
+    //         });
+    //     }
+    //
+    //     if word_len == constant::WL_BIT {
+    //         amount = 1; // Only 1 bit can be transferred at time
+    //     } else {
+    //         if word_len != constant::WL_COUNTER && word_len != constant::WL_TIMER {
+    //             amount = amount * word_size;
+    //             word_size = 1;
+    //             word_len = constant::WL_BYTE;
+    //         }
+    //     }
+    //
+    //     let mut offset: i32 = 0;
+    //     let pdu_length = self.transport.pdu_length();
+    //     let max_elements = (pdu_length - 35) as i32 / word_size; // 35 = Reply telegram header
+    //     let mut tot_elements = amount;
+    //
+    //     while tot_elements > 0 {
+    //         let mut num_elements = tot_elements;
+    //         if num_elements > max_elements {
+    //             num_elements = max_elements;
+    //         }
+    //         let data_size = num_elements * word_size;
+    //         let iso_size = constant::SIZE_HEADER_WRITE + data_size;
+    //
+    //         // Setup the telegram
+    //         let mut request_data = transport::READ_WRITE_TELEGRAM.to_vec();
+    //         // Whole telegram Size
+    //         BigEndian::write_u16(request_data[2..].as_mut(), iso_size as u16);
+    //         // Data length
+    //         let mut length = data_size + 4;
+    //         BigEndian::write_u16(request_data[15..].as_mut(), length as u16);
+    //         // Function
+    //         request_data[17] = 0x05;
+    //         // Set DB Number
+    //         request_data[27] = area as u8;
+    //
+    //         match area {
+    //             Area::DataBausteine => {
+    //                 BigEndian::write_u16(request_data[25..].as_mut(), db_number as u16)
+    //             }
+    //             _ => {}
+    //         }
+    //         // Adjusts start and word length
+    //         let mut address = match word_len {
+    //             constant::WL_BIT | constant::WL_COUNTER | constant::WL_TIMER => {
+    //                 length = data_size;
+    //                 request_data[22] = word_len as u8;
+    //                 start
+    //             }
+    //             _ => {
+    //                 length = data_size << 3;
+    //                 start << 3
+    //             }
+    //         };
+    //
+    //         // Num elements
+    //         BigEndian::write_u16(request_data[23..].as_mut(), num_elements as u16);
+    //         // address into the PLC
+    //         request_data[30] = (address & 0x0FF) as u8;
+    //         address = address >> 8;
+    //         request_data[29] = (address & 0x0FF) as u8;
+    //         address = address >> 8;
+    //         request_data[28] = (address & 0x0FF) as u8;
+    //
+    //         // Transport Size
+    //         match word_len {
+    //             constant::WL_BIT => request_data[32] = constant::TS_RES_BIT as u8,
+    //             constant::WL_COUNTER | constant::WL_TIMER => {
+    //                 request_data[32] = constant::TS_RES_OCTET as u8
+    //             }
+    //             _ => request_data[32] = constant::TS_RES_BYTE as u8, // byte/word/dword etc.
+    //         }
+    //         // length
+    //         BigEndian::write_u16(request_data[33..].as_mut(), length as u16);
+    //
+    //         //expand values into array
+    //         request_data.splice(
+    //             35..35,
+    //             buffer[offset as usize..offset as usize + data_size as usize].to_vec(),
+    //         );
+    //
+    //         let result = self.transport.send(request_data.as_mut_slice());
+    //
+    //         match result {
+    //             Ok(response) => {
+    //                 if response.len() != 22 {
+    //                     return Err(Error::Response {
+    //                         code: error::ISO_INVALID_PDU,
+    //                     });
+    //                 }
+    //
+    //                 if response[21] != 0xFF {
+    //                     return Err(Error::CPU {
+    //                         code: response[21] as i32,
+    //                     });
+    //                 }
+    //             }
+    //             Err(e) => {
+    //                 return Err(e);
+    //             }
+    //         }
+    //
+    //         offset += data_size;
+    //         tot_elements -= num_elements;
+    //         start += num_elements * word_size;
+    //     }
+    //     Ok(())
+    // }
 }
 
 impl<T: Transport> Client<T> {

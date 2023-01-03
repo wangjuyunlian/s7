@@ -6,6 +6,7 @@
 
 use super::constant;
 use super::error::Error;
+use crate::constant::DataSizeByte;
 
 /// Client Connection Type
 /// 16 possible connections limited by the hardware
@@ -33,7 +34,7 @@ pub trait Transport {
     /// returns a response and an error, if there was any.
     fn send(&mut self, request: &[u8]) -> Result<Vec<u8>, Error>;
     /// pdu length needs to be set by the implementor, during the connection phase.
-    fn pdu_length(&self) -> i32;
+    fn pdu_length(&self) -> u16;
     /// negotiate is called by the client and should only be defined by the implementor
     fn negotiate(&mut self) -> Result<(), Error>;
 
@@ -74,42 +75,30 @@ pub const ISO_CONNECTION_REQUEST_TELEGRAM: [u8; 22] = [
 /// S7 Read/Write Request Header (contains also ISO Header and COTP Header)
 pub const READ_WRITE_TELEGRAM: [u8; 35] = [
     // 31-35 bytes
-    3,
-    0,
-    0,
-    31, // Telegram Length (Data Size + 31 or 35)
-    2,
-    240,
-    128, // COTP (see above for info)
+    3, 0, 0, 31, // Telegram Length (Data Size + 31 or 35)
+    2, 240, 128, // COTP (see above for info)
     50,  // S7 Protocol ID
     1,   // Job Type
-    0,
-    0, // Redundancy identification
-    5,
-    0, // PDU Reference //lth this use for request S7 packet id
-    0,
-    14, // Parameters Length
-    0,
-    0,                       // Data Length = Size(bytes) + 4
-    4,                       // Function 4 Read Var, 5 Write Var
-    1,                       // Items count
-    18,                      // Var spec.
-    10,                      // Length of remaining bytes
-    16,                      // Syntax ID
-    constant::WL_BYTE as u8, // Transport Size idx=22
-    0,
-    0, // Num Elements
-    0,
-    0,   // DB Number (if any, else 0)
-    132, // Area Type
-    0,
-    0,
-    0, // Area Offset
+    0, 0, // Redundancy identification
+    5, 0, // PDU Reference //lth this use for request S7 packet id
+    0, 14, // Parameters Length
+    0, 0,    // Data Length = Size(bytes) + 4
+    4,    // Function 4 Read Var, 5 Write Var
+    1,    // Items count
+    18,   // Var spec.
+    10,   // Length of remaining bytes
+    16,   // Syntax ID
+    0x02, // Transport Size index=22
+    0,    // Num Elements
+    0,    // Num Elements
+    0,    // DB Number (if any, else 0)
+    0,    // DB Number (if any, else 0)
+    132,  // Area Type
+    0, 0, 0, // Area Offset
     // WR area
     0, // Reserved
     4, // Transport size
-    0,
-    0,
+    0, 0,
 ]; // Data Length * 8 (if not bit or timer or counter)
 
 // used during establishing a connection

@@ -81,7 +81,7 @@ pub enum Error {
     InvalidInput { input: String },
     Send,
     Iso,
-    PduLength(i32),
+    PduLength(u16),
     TryFrom(Vec<u8>, String),
     InvalidCpuStatus(u8),
     InvalidResponse { reason: String, bytes: Vec<u8> },

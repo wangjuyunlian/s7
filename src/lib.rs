@@ -8,3 +8,5 @@ pub mod error;
 pub mod field;
 pub mod tcp;
 pub mod transport;
+
+pub use constant::{BitAddr, DataSizeByte};

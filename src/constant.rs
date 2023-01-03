@@ -17,28 +17,126 @@ pub(crate) enum Area {
     Timer = 0x1D,
     Unknown,
 }
+#[derive(Debug, Copy, Clone)]
+#[repr(u8)]
+pub enum BitAddr {
+    Addr0 = 0,
+    Addr1 = 1,
+    Addr2 = 2,
+    Addr3 = 3,
+    Addr4 = 4,
+    Addr5 = 5,
+    Addr6 = 6,
+    Addr7 = 7,
+}
 
-// Word Length
-pub const WL_BIT: i32 = 0x01; //Bit (inside a word)
-pub const WL_BYTE: i32 = 0x02; //Byte (8 bit)
-pub const WL_CHAR: i32 = 0x03;
-pub const WL_WORD: i32 = 0x04; //Word (16 bit)
-pub const WL_INT: i32 = 0x05;
-pub const WL_DWORD: i32 = 0x06; //Double Word (32 bit)
-pub const WL_DINT: i32 = 0x07;
-pub const WL_REAL: i32 = 0x08; //Real (32 bit float)
-pub const WL_COUNTER: i32 = 0x1C; //Counter (16 bit)
-pub const WL_TIMER: i32 = 0x1D; //Timer (16 bit)
-
-//dataSize to number of byte accordingly
-pub fn data_size_byte(word_length: i32) -> i32 {
-    match word_length {
-        WL_BIT | WL_BYTE | WL_CHAR => 1,
-        WL_WORD | WL_INT | WL_COUNTER | WL_TIMER => 2,
-        WL_DWORD | WL_DINT | WL_REAL => 4,
-        _ => 0,
+#[derive(Debug, Copy, Clone)]
+pub enum DataSizeByte {
+    Bit { addr: u16, bit_addr: BitAddr },
+    Byte { addr: u16, len: u16 },
+    Char { addr: u16, len: u16 },
+    Word { addr: u16, len: u16 },
+    Int { addr: u16, len: u16 },
+    DWord { addr: u16, len: u16 },
+    DInt { addr: u16, len: u16 },
+    Real { addr: u16, len: u16 },
+    Counter { addr: u16, len: u16 },
+    Timer { addr: u16, len: u16 },
+}
+impl DataSizeByte {
+    pub fn length(&self) -> u16 {
+        use DataSizeByte::*;
+        match self {
+            Bit { .. } | Byte { .. } | Char { .. } => 1,
+            Word { .. } | Int { .. } | Counter { .. } | Timer { .. } => 2,
+            DWord { .. } | DInt { .. } | Real { .. } => 4,
+        }
+    }
+    pub fn bit_addr(&self) -> u8 {
+        use DataSizeByte::*;
+        match self {
+            Bit { bit_addr, .. } => *bit_addr as u8,
+            _ => 0x00,
+        }
+    }
+    pub fn len(&self) -> u16 {
+        use DataSizeByte::*;
+        match self {
+            Bit { bit_addr, .. } => 1u16,
+            Byte { len, .. } => *len,
+            Char { len, .. } => *len,
+            Word { len, .. } => *len,
+            Int { len, .. } => *len,
+            DWord { len, .. } => *len,
+            DInt { len, .. } => *len,
+            Real { len, .. } => *len,
+            Counter { len, .. } => *len,
+            Timer { len, .. } => *len,
+        }
+    }
+    /// 用于返回后的byte长度
+    pub fn byte_len(&self) -> usize {
+        (self.len() as usize) * self.byte_len()
+    }
+    pub fn addr(&self) -> [u8; 3] {
+        use DataSizeByte::*;
+        let byte_addr = match self {
+            Bit { addr, .. } => *addr,
+            Byte { addr, .. } => *addr,
+            Char { addr, .. } => *addr,
+            Word { addr, .. } => *addr,
+            Int { addr, .. } => *addr,
+            DWord { addr, .. } => *addr,
+            DInt { addr, .. } => *addr,
+            Real { addr, .. } => *addr,
+            Counter { addr, .. } => *addr,
+            Timer { addr, .. } => *addr,
+        };
+        let mut address = (byte_addr as u32) << 3 + self.bit_addr();
+        [
+            (address & 0xFF0000 >> 16) as u8,
+            (address & 0xFF00 >> 8) as u8,
+            (address & 0xFF) as u8,
+        ]
+    }
+    pub fn data(&self) -> u8 {
+        use DataSizeByte::*;
+        match self {
+            Bit { .. } => 0x01,
+            Byte { .. } => 0x02,
+            Char { .. } => 0x03,
+            Word { .. } => 0x04,
+            Int { .. } => 0x05,
+            DWord { .. } => 0x06,
+            DInt { .. } => 0x07,
+            Real { .. } => 0x08,
+            Counter { .. } => 0x1C,
+            Timer { .. } => 0x1D,
+        }
     }
 }
+
+// Word Length
+// pub const WL_BIT: i32 = 0x01; //Bit (inside a word)
+// pub const WL_BYTE: i32 = 0x02; //Byte (8 bit)
+// pub const WL_CHAR: i32 = 0x03;
+// pub const WL_WORD: i32 = 0x04; //Word (16 bit)
+// pub const WL_INT: i32 = 0x05;
+// pub const WL_DWORD: i32 = 0x06; //Double Word (32 bit)
+// pub const WL_DINT: i32 = 0x07;
+// pub const WL_REAL: i32 = 0x08; //Real (32 bit float)
+// pub const WL_COUNTER: i32 = 0x1C; //Counter (16 bit)
+// pub const WL_TIMER: i32 = 0x1D; //Timer (16 bit)
+//
+// //dataSize to number of byte accordingly
+// pub fn data_size_byte(word_length: i32) -> i32 {
+//     match word_length {
+//         WL_BIT | WL_BYTE | WL_CHAR => 1,
+//         WL_WORD | WL_INT | WL_COUNTER | WL_TIMER => 2,
+//         WL_DWORD | WL_DINT | WL_REAL => 4,
+//         _ => 0,
+//     }
+// }
 
 // PLC Status
 pub enum CpuStatus {

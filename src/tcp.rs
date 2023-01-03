@@ -7,7 +7,7 @@
 extern crate byteorder;
 
 use super::error::{self, Error};
-use super::transport::{self, Transport as PackTrait};
+use super::transport::{self, Transport};
 use crate::transport::Connection;
 use byteorder::{BigEndian, ByteOrder};
 use std::io::{Read, Write};
@@ -22,12 +22,12 @@ pub const TIMEOUT: Duration = Duration::from_secs(10);
 pub const IDLE_TIMEOUT: Duration = Duration::from_secs(60);
 pub const MAX_LENGTH: usize = 2084;
 //messages
-const PDU_SIZE_REQUESTED: i32 = 480;
-const ISO_TCP: i32 = 102; //default isotcp port
-const ISO_HEADER_SIZE: i32 = 7; // TPKT+COTP Header Size
-const MIN_PDU_SIZE: i32 = 16;
+const PDU_SIZE_REQUESTED: u16 = 480;
+const ISO_TCP: u16 = 102; //default isotcp port
+const ISO_HEADER_SIZE: u16 = 7; // TPKT+COTP Header Size
+const MIN_PDU_SIZE: u16 = 16;
 
-pub struct Transport {
+pub struct TcpTransport {
     options: Options,
     stream: Mutex<TcpStream>,
 }
@@ -48,12 +48,12 @@ pub struct Options {
     remote_tsap_low: u8,
     last_pdu_type: u8,
     //PDULength variable to store pdu length after connect
-    pdu_length: i32,
+    pdu_length: u16,
 }
 
 impl Options {
     pub fn new(address: IpAddr, rack: u16, slot: u16, conn_type: Connection) -> Options {
-        let mut remote_tsap = ((connection_type() as u16) << 8) as u16 + (rack * 0x20) + slot;
+        let mut remote_tsap = ((conn_type as u16) << 8) + (rack * 0x20) + slot;
         Options {
             read_timeout: Duration::new(0, 0),
             write_timeout: Duration::new(0, 0),
@@ -71,13 +71,13 @@ impl Options {
     }
 }
 
-impl Transport {
-    pub fn connect(options: Options) -> Result<Transport, Error> {
+impl TcpTransport {
+    pub fn connect(options: Options) -> Result<TcpTransport, Error> {
         let tcp_client = TcpStream::connect(&options.address)?;
 
         tcp_client.set_read_timeout(Some(options.read_timeout))?;
         tcp_client.set_write_timeout(Some(options.write_timeout))?;
-        Ok(Transport {
+        Ok(TcpTransport {
             options,
             stream: Mutex::new(tcp_client),
         })
@@ -100,7 +100,7 @@ impl Transport {
 
         // Sends the connection request telegram
         if n != msg.len() {
-            return Err(Error::PduLength(n as i32));
+            return Err(Error::PduLength(n as u16));
         }
 
         if self.options.last_pdu_type != transport::CONFIRM_CONNECTION {
@@ -119,7 +119,7 @@ impl Transport {
         if response.len() == 27 && response[17] == 0 && response[18] == 0 {
             // 20 = size of Negotiate Answer
             // Get PDU Size Negotiated
-            self.options.pdu_length = BigEndian::read_u16(&response[25..]) as i32;
+            self.options.pdu_length = BigEndian::read_u16(&response[25..]);
             if self.options.pdu_length <= 0 {
                 return Err(Error::Response {
                     code: error::CLI_NEGOTIATING_PDU,
@@ -134,7 +134,7 @@ impl Transport {
     }
 }
 
-impl PackTrait for Transport {
+impl Transport for TcpTransport {
     fn send(&mut self, request: &[u8]) -> Result<Vec<u8>, Error> {
         // Send sends data to server and ensures response length is greater than header length.
         let mut stream = match self.stream.lock() {
@@ -152,7 +152,7 @@ impl PackTrait for Transport {
 
             // Read length, ignore transaction & protocol id (4 bytes)
             length = BigEndian::read_u16(&data[2..]);
-            let length_n = length as i32;
+            let length_n = length;
 
             if length_n == ISO_HEADER_SIZE {
                 stream.read(&mut data[4..7])?;
@@ -173,12 +173,11 @@ impl PackTrait for Transport {
         Ok(data[0..length as usize].to_vec())
     }
 
-    fn pdu_length(&self) -> i32 {
+    fn pdu_length(&self) -> u16 {
         self.options.pdu_length
     }
 
     fn negotiate(&mut self) -> Result<(), Error> {
-        self.set_tsap();
         self.iso_connect()?;
         self.negotiate_pdu_length()
     }
