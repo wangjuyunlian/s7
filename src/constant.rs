@@ -1,6 +1,6 @@
-use std::ops::Deref;
-use serde::{Deserialize, Serialize};
 use crate::error::Error;
+use serde::{Deserialize, Serialize};
+use std::ops::Deref;
 
 // Area ID
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
@@ -21,19 +21,18 @@ pub enum Area {
 impl Area {
     pub fn area_data(&self) -> u8 {
         match &self {
-            Area::ProcessInput(_) => {0x81}
-            Area::ProcessOutput(_) => {0x82}
+            Area::ProcessInput(_) => 0x81,
+            Area::ProcessOutput(_) => 0x82,
             // Area::Merker => {0x83}
-            Area::DataBausteine(_, _) => {0x84}
-            // Area::Counter => {0x1C}
-            // Area::Timer => {0x1D}
+            Area::DataBausteine(_, _) => 0x84, // Area::Counter => {0x1C}
+                                               // Area::Timer => {0x1D}
         }
     }
     pub fn db_number(&self) -> u16 {
         match self {
-            Area::ProcessInput(_) => {0}
-            Area::ProcessOutput(_) => {0}
-            Area::DataBausteine(db_number, _) => {*db_number}
+            Area::ProcessInput(_) => 0,
+            Area::ProcessOutput(_) => 0,
+            Area::DataBausteine(db_number, _) => *db_number,
         }
     }
 }
@@ -42,9 +41,9 @@ impl Deref for Area {
 
     fn deref(&self) -> &Self::Target {
         match self {
-            Area::ProcessInput(val) => {val}
-            Area::ProcessOutput(val) => {val}
-            Area::DataBausteine(_, val) => {val}
+            Area::ProcessInput(val) => val,
+            Area::ProcessOutput(val) => val,
+            Area::DataBausteine(_, val) => val,
         }
     }
 }
@@ -97,7 +96,7 @@ impl DataSizeType {
     pub fn len(&self) -> u16 {
         use DataSizeType::*;
         match self {
-            Bit {  .. } => 1u16,
+            Bit { .. } => 1u16,
             Byte { len, .. } => *len,
             Char { len, .. } => *len,
             Word { len, .. } => *len,
@@ -111,7 +110,7 @@ impl DataSizeType {
     }
     /// 用于返回后的byte长度 = 读取长度 * 单位字节数
     pub fn byte_len(&self) -> usize {
-        (self.len()  * self.length() ) as usize
+        (self.len() * self.length()) as usize
     }
     pub fn addr(&self) -> [u8; 3] {
         use DataSizeType::*;
@@ -129,9 +128,9 @@ impl DataSizeType {
         };
         let address = (byte_addr as u32) << 3 + self.bit_addr();
         [
-            (address & 0xFF0000 >> 16) as u8,
-            (address & 0xFF00 >> 8) as u8,
-            (address & 0xFF) as u8,
+            ((address & 0x00FF0000) >> 16) as u8,
+            ((address & 0x0000FF00) >> 8) as u8,
+            (address & 0x000000FF) as u8,
         ]
     }
     pub fn data(&self) -> u8 {

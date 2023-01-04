@@ -1,7 +1,7 @@
 use log::debug;
 use pretty_hex::simple_hex;
-use s7::{client, tcp, transport, Area, BitAddr, Config, DataSizeType};
-use std::net::{IpAddr, Ipv4Addr};
+use s7::{client, tcp, Area, BitAddr, Config, DataSizeType};
+use std::net::Ipv4Addr;
 use std::time::Duration;
 
 fn main() {
@@ -14,7 +14,7 @@ fn main() {
         timeout: Duration::from_secs(2),
         areas: Default::default(),
     };
-    let mut opts = tcp::Options::init_from_config(&config);
+    let opts = tcp::Options::init_from_config(&config);
     let t = tcp::TcpTransport::connect(opts).unwrap();
     let mut cl = client::Client::new(t).unwrap();
     // {
@@ -54,7 +54,7 @@ fn main() {
             simple_hex(
                 &cl.read(Area::DataBausteine(
                     1,
-                    DataSizeType::Word { addr: 300, len: 1 }
+                    DataSizeType::Byte { addr: 300, len: 1 }
                 ))
                 .unwrap()
             )
