@@ -2,16 +2,15 @@
 // This software may be modified and distributed under the terms
 // of the BSD license. See the LICENSE file for details.
 
-//! Transport definition for PLC
-
 use super::error::Error;
+use serde::{Deserialize, Serialize};
 
 /// Client Connection Type
 /// 16 possible connections limited by the hardware
 /// The types are defined from the highest to lowest priority
 /// The basic connections are the first which would be closed
 /// if there aren't enough resources
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Connection {
     /// Connect to the PLC programming console (Programmiergeräte). German for programming device.
     PG = 1,

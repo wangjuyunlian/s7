@@ -85,6 +85,7 @@ pub enum Error {
     TryFrom(Vec<u8>, String),
     InvalidCpuStatus(u8),
     InvalidResponse { reason: String, bytes: Vec<u8> },
+    InvalidBitAddr(u16),
 }
 
 impl fmt::Display for Error {
@@ -107,6 +108,9 @@ impl fmt::Display for Error {
             Error::InvalidCpuStatus(status) => write!(f, "Invalid cpu status {}", status),
             Error::InvalidResponse { reason, bytes } => {
                 write!(f, "Invalid response {:?} err {}", bytes, reason)
+            }
+            Error::InvalidBitAddr(addr) => {
+                write!(f, "Invalid bit addr {}", addr)
             }
         }
     }

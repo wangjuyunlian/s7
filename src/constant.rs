@@ -1,5 +1,6 @@
 use crate::error::Error;
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use std::ops::Deref;
 
 // Area ID
@@ -15,14 +16,15 @@ pub enum Area {
     /// German thing, means building blocks
     /// This is your storage  : db number, DataSizeType
     DataBausteine(u16, DataSizeType),
-    // Counter,
-    // Timer,
+    V(DataSizeType), // Counter,
+                     // Timer,
 }
 impl Area {
     pub fn area_data(&self) -> u8 {
         match &self {
             Area::ProcessInput(_) => 0x81,
             Area::ProcessOutput(_) => 0x82,
+            Area::V(_) => 0x84,
             // Area::Merker => {0x83}
             Area::DataBausteine(_, _) => 0x84, // Area::Counter => {0x1C}
                                                // Area::Timer => {0x1D}
@@ -32,6 +34,7 @@ impl Area {
         match self {
             Area::ProcessInput(_) => 0,
             Area::ProcessOutput(_) => 0,
+            Area::V(_) => 0,
             Area::DataBausteine(db_number, _) => *db_number,
         }
     }
@@ -43,6 +46,7 @@ impl Deref for Area {
         match self {
             Area::ProcessInput(val) => val,
             Area::ProcessOutput(val) => val,
+            Area::V(val) => val,
             Area::DataBausteine(_, val) => val,
         }
     }
@@ -59,6 +63,23 @@ pub enum BitAddr {
     Addr5 = 5,
     Addr6 = 6,
     Addr7 = 7,
+}
+impl TryFrom<u16> for BitAddr {
+    type Error = Error;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::Addr0),
+            1 => Ok(Self::Addr1),
+            2 => Ok(Self::Addr2),
+            3 => Ok(Self::Addr3),
+            4 => Ok(Self::Addr4),
+            5 => Ok(Self::Addr5),
+            6 => Ok(Self::Addr6),
+            7 => Ok(Self::Addr7),
+            val => Err(Error::InvalidBitAddr(val)),
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]

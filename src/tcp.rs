@@ -69,18 +69,18 @@ impl Options {
     //     }
     // }
     pub fn init_from_config(config: &CollectParam) -> Options {
-        let remote_tsap =
-            ((Connection::default() as u16) << 8) + (config.rack * 0x20) + config.slot;
+        let remote_tsap = config.collect_mode.remote_tsap();
+        let local_tsap = config.collect_mode.local_tsap();
         Options {
             read_timeout: config.timeout,
             write_timeout: config.timeout,
             port: config.port,
-            address: config.address, //ip:102,
-            conn_type: Connection::default(),
-            local_tsap_high: 0x01,
-            local_tsap_low: 0x00,
-            remote_tsap_high: (remote_tsap >> 8) as u8,
-            remote_tsap_low: remote_tsap as u8,
+            address: config.address.into(), //ip:102,
+            conn_type: config.collect_mode.conn_type().clone(),
+            local_tsap_high: local_tsap[0],
+            local_tsap_low: local_tsap[1],
+            remote_tsap_high: remote_tsap[0],
+            remote_tsap_low: remote_tsap[1],
             last_pdu_type: 0,
             pdu_length: 256,
         }

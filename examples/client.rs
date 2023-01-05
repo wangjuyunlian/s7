@@ -1,6 +1,6 @@
 use log::debug;
 use pretty_hex::simple_hex;
-use s7::{Area, BitAddr, Client, CollectParam, DataSizeType};
+use s7::{Area, BitAddr, Client, CollectMode, CollectParam, DataSizeType};
 use std::net::Ipv4Addr;
 use std::time::Duration;
 
@@ -9,8 +9,11 @@ fn main() {
     let config = CollectParam {
         address: Ipv4Addr::new(192, 168, 1, 222).into(),
         port: 102,
-        rack: 0,
-        slot: 1,
+        collect_mode: CollectMode::RackSlot {
+            conn_type: Default::default(),
+            rack: 0,
+            slot: 1,
+        },
         timeout: Duration::from_secs(2),
         areas: Default::default(),
     };
