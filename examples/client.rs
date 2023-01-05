@@ -1,12 +1,12 @@
 use log::debug;
 use pretty_hex::simple_hex;
-use s7::{client, tcp, Area, BitAddr, Config, DataSizeType};
+use s7::{Area, BitAddr, Client, CollectParam, DataSizeType};
 use std::net::Ipv4Addr;
 use std::time::Duration;
 
 fn main() {
     custom_utils::logger::logger_stdout_debug();
-    let config = Config {
+    let config = CollectParam {
         address: Ipv4Addr::new(192, 168, 1, 222).into(),
         port: 102,
         rack: 0,
@@ -14,9 +14,7 @@ fn main() {
         timeout: Duration::from_secs(2),
         areas: Default::default(),
     };
-    let opts = tcp::Options::init_from_config(&config);
-    let t = tcp::TcpTransport::connect(opts).unwrap();
-    let mut cl = client::Client::new(t).unwrap();
+    let mut cl = Client::init_by_options(&config).unwrap();
     // {
     //     // 读DQ0数据
     debug!(

@@ -5,7 +5,9 @@
 use super::constant::{self, Area};
 use super::error::{self, Error};
 use super::transport::{self, Transport};
-use crate::constant::{CpuStatus};
+use crate::constant::CpuStatus;
+use crate::tcp::{Options, TcpTransport};
+use crate::CollectParam;
 use byteorder::{BigEndian, ByteOrder};
 use std::str;
 
@@ -30,7 +32,13 @@ pub struct CPInfo {
 pub struct Client<T: Transport> {
     transport: T,
 }
-
+impl Client<TcpTransport> {
+    pub fn init_by_options(param: &CollectParam) -> Result<Client<TcpTransport>, Error> {
+        let opts = Options::init_from_config(&param);
+        let t = TcpTransport::connect(opts)?;
+        Ok(Client::new(t)?)
+    }
+}
 impl<T: Transport> Client<T> {
     pub fn new(mut transport: T) -> Result<Client<T>, Error> {
         transport.negotiate()?;
@@ -257,10 +265,7 @@ impl<T: Transport> Client<T> {
     ///
     /// Transport Size固定为Byte
     /// 3位的Bit addr固定为0
-    pub fn read(
-        &mut self,
-        area: Area,
-    ) -> Result<Vec<u8>, Error> {
+    pub fn read(&mut self, area: Area) -> Result<Vec<u8>, Error> {
         let pdu_length = self.transport.pdu_length();
 
         if pdu_length == 0 {

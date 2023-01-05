@@ -9,7 +9,7 @@ extern crate byteorder;
 use super::error::{self, Error};
 use super::transport::{self, Transport};
 use crate::transport::Connection;
-use crate::Config;
+use crate::CollectParam;
 use byteorder::{BigEndian, ByteOrder};
 use std::io::{Read, Write};
 use std::net::IpAddr;
@@ -68,7 +68,7 @@ impl Options {
     //         pdu_length: 256,
     //     }
     // }
-    pub fn init_from_config(config: &Config) -> Options {
+    pub fn init_from_config(config: &CollectParam) -> Options {
         let remote_tsap =
             ((Connection::default() as u16) << 8) + (config.rack * 0x20) + config.slot;
         Options {
