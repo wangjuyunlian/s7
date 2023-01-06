@@ -7,7 +7,7 @@ use std::time::Duration;
 fn main() {
     custom_utils::logger::logger_stdout_debug();
     let config = CollectParam {
-        address: Ipv4Addr::new(192, 168, 1, 222).into(),
+        address: Ipv4Addr::new(192, 168, 254, 60).into(),
         port: 102,
         collect_mode: CollectMode::RackSlot {
             conn_type: Default::default(),
@@ -62,6 +62,16 @@ fn main() {
         );
     }
 
+    {
+        // 读DB数据
+        debug!(
+            "{}",
+            simple_hex(
+                &cl.read(Area::V(DataSizeType::Byte { addr: 300, len: 1 }))
+                    .unwrap()
+            )
+        );
+    }
     // 写V300的long值
     // let val = 160u32;
     // cl.ag_write(1, 300, 4, &mut val.to_be_bytes().as_slice().to_vec())

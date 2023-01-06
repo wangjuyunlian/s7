@@ -34,7 +34,7 @@ impl Area {
         match self {
             Area::ProcessInput(_) => 0,
             Area::ProcessOutput(_) => 0,
-            Area::V(_) => 0,
+            Area::V(_) => 1,
             Area::DataBausteine(db_number, _) => *db_number,
         }
     }
@@ -147,7 +147,7 @@ impl DataSizeType {
             Counter { addr, .. } => *addr,
             Timer { addr, .. } => *addr,
         };
-        let address = (byte_addr as u32) << 3 + self.bit_addr();
+        let address = ((byte_addr as u32) << 3) + self.bit_addr() as u32;
         [
             ((address & 0x00FF0000) >> 16) as u8,
             ((address & 0x0000FF00) >> 8) as u8,
