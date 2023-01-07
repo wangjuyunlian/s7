@@ -92,9 +92,9 @@ impl TcpTransport {
     pub fn connect(options: Options) -> Result<TcpTransport, Error> {
         let tcp_client = match TcpStream::connect((options.address, options.port)) {
             Ok(tcp) => tcp,
-            e => {
+            Err(e) => {
                 error!("tcp connect fail: {:?}", e);
-                e?;
+                return Err(e.into());
             }
         };
 
