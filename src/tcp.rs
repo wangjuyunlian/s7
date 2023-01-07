@@ -11,6 +11,7 @@ use super::transport::{self, Transport};
 use crate::transport::Connection;
 use crate::CollectParam;
 use byteorder::{BigEndian, ByteOrder};
+use log::error;
 use std::io::{Read, Write};
 use std::net::IpAddr;
 use std::net::TcpStream;
@@ -89,7 +90,13 @@ impl Options {
 
 impl TcpTransport {
     pub fn connect(options: Options) -> Result<TcpTransport, Error> {
-        let tcp_client = TcpStream::connect((options.address, options.port))?;
+        let tcp_client = match TcpStream::connect((options.address, options.port)) {
+            Ok(tcp) => tcp,
+            e => {
+                error!("tcp connect fail: {:?}", e);
+                e?;
+            }
+        };
 
         tcp_client.set_read_timeout(Some(options.read_timeout))?;
         tcp_client.set_write_timeout(Some(options.write_timeout))?;
@@ -194,8 +201,15 @@ impl Transport for TcpTransport {
     }
 
     fn negotiate(&mut self) -> Result<(), Error> {
-        self.iso_connect()?;
-        self.negotiate_pdu_length()
+        if let Err(e) = self.iso_connect() {
+            error!("iso_connect error: {:?}", e);
+            return Err(e);
+        }
+        if let Err(e) = self.negotiate_pdu_length() {
+            error!("negotiate_pdu_length error: {:?}", e);
+            return Err(e);
+        }
+        Ok(())
     }
 
     fn connection_type(&self) -> Connection {
